@@ -40,28 +40,36 @@ object LogCollector {
     */
   def generateLog(delay: Long, loop_len: Int): Unit = {
 
-    for (i <- 0 until loop_len) {
-
-      val eventsArray = new JSONArray
+    for (i <- 0 to loop_len) {
 
       print(i + "======>")
 
       val flag = rand.nextInt(2)
+
       flag match {
         case 0 =>
-          // 角色升级事件
-          if (rand.nextBoolean()) {
+          val eventsArray = new JSONArray
+          if (rand.nextBoolean) {
+            // 角色升级
             eventsArray.add(getRoleRank)
-          }
-        case 1 =>
-          // 角色金钱改变
-          if (rand.nextBoolean()) {
+          } else {
+            // 角色金钱改变
             eventsArray.add(getMoneyFlow)
           }
+          //控制台打印
+          logger.info(eventsArray.toJSONString)
+        case 1 =>
+          val eventsArray = new JSONArray
+          if (rand.nextBoolean) {
+            // 角色升级
+            eventsArray.add(getRoleRank)
+          } else {
+            // 角色金钱改变
+            eventsArray.add(getMoneyFlow)
+          }
+          //控制台打印
+          logger.info(eventsArray.toJSONString)
       }
-      //控制台打印
-      logger.info(eventsArray.toJSONString)
-
       // 延迟
       try
         Thread.sleep(delay)
@@ -72,11 +80,12 @@ object LogCollector {
     }
   }
 
+
   /**
     * 设置事件,并拼接所有属性(game_id,事件,角色信息)
     */
-  def packEventJson(eventName:String , json: JSON): JSONObject = {
-    val packJson = new JSONObject()
+  def packEventJson(eventName: String, json: JSON):JSONObject = {
+    val packJson = new JSONObject(true)
 
     // 拼接cp_game_id
     val cp_game_id = rand.nextInt(19)
@@ -89,9 +98,9 @@ object LogCollector {
     val eventJson = JSON.toJSON(eventBean).asInstanceOf[JSONObject]
 
 
-    packJson.put("cp_game_id",cp_game_id)
-    packJson.put("event",eventJson)
-    packJson.put("data",json)
+    packJson.put("cp_game_id", cp_game_id)
+    packJson.put("event", eventJson)
+    packJson.put("data", json)
 
     packJson
   }
@@ -113,7 +122,7 @@ object LogCollector {
 
     val roleJson = JSON.toJSON(roleRank).asInstanceOf[JSONObject]
 
-    packEventJson("role_rank",roleJson)
+    packEventJson("role_rank", roleJson)
   }
 
   /**
@@ -136,7 +145,7 @@ object LogCollector {
     moneyFlow.money = rand.nextInt(9999)
     moneyFlow.after_money = rand.nextInt(99999)
     moneyFlow.add_or_rduce = {
-      val i = rand.nextInt(1);
+      val i = rand.nextInt(1)
       if (i == 0) 0 else 1
     }
     moneyFlow.reason = getReason
@@ -144,7 +153,7 @@ object LogCollector {
 
     val moneyJson = JSON.toJSON(moneyFlow).asInstanceOf[JSONObject]
 
-    packEventJson("money_Flow",moneyJson)
+    packEventJson("money_Flow", moneyJson)
   }
 
 
