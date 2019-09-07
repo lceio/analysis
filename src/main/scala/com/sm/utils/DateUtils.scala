@@ -1,174 +1,164 @@
 package com.sm.utils
 
-import java.text.SimpleDateFormat
-import java.util.{Calendar, Locale}
+import java.text.{ParseException, SimpleDateFormat}
+import java.util.{Calendar, Date, Locale}
 
+import org.apache.spark.sql.execution.streaming.FileStreamSource.Timestamp
+
+/**
+  * 日期时间工具类
+  */
 object DateUtils {
-  //获取日期 格式2018-09-27 13:39:35
-  //参数i :  当天为0，前一天为-1
-  def getDate(i:Int):String={
-    val cal = Calendar.getInstance()
-    cal.add(Calendar.DATE,i)
-    var day = timestampToDate(cal.getTimeInMillis)
-    day
+  val DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd")
+  val DATE_KEY_FORMAT = new SimpleDateFormat("yyyyMMdd")
+  val TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+  val TIME_MINUTE_FORMAT = new SimpleDateFormat("yyyyMMddHHmm")
+  val GMT_FORMAT = new SimpleDateFormat("dd/MMM/yyyy hh:mm:ss", Locale.ENGLISH)
+
+  /**
+    * 获取当天日期 格式:yyyy-MM-dd
+    *
+    * @return 当天日期
+    */
+  def getTodayDate: String = {
+    DATE_FORMAT.format(new Date)
   }
 
   /**
-    * 格式化日期
-    * @param s 2018-12-12 12:11:10
-    * @return 20181212
+    * 获取昨天日期 格式:yyyy-MM-dd
+    *
+    * @return 昨天日期
     */
-  def fmtDate(s:String):Option[String]={
-    try {
-      if (StringUtils.isNotEmpty(s)) {
-        val fields = s.split(" ")
-        if (fields.length > 1) {
-          Some(fields(0).replace("-", ""))
-        } else {
-          None
-        }
+  def getYesterdayDate: String = {
+    val cal = Calendar.getInstance
+    cal.setTime(new Date)
+    cal.add(Calendar.DATE, -1)
+    DATE_FORMAT.format(cal.getTime)
+  }
 
-      } else {
-        None
-      }
-    } catch {
-      case _:Exception => None
-    }
+  /** 获取日期时间 格式:yyyy-MM-dd HH:mm:ss
+    *
+    * @param i :  当天为0，前一天为-1,后一天为1
+    * @return yyyy-MM-dd  HH:mm:ss
+    */
+  def getDate(i: Int): String = {
+    val cal = Calendar.getInstance
+    cal.setTime(new Date)
+    cal.add(Calendar.DATE, i)
+    TIME_FORMAT.format(cal.getTimeInMillis)
   }
 
   /**
-    * 格式化日期 string
-    * @param s 2018-12-12 12:11:10
-    * @return 20181212
+    * 格式化日期 date转日期
+    *
+    * @param date Date对象 Sat Sep 07 03:02:01 CST 2019
+    * @return yyyy-MM-dd
     */
-  def formatDate(s:String):String= {
-    var date = ""
-    if (StringUtils.isNotEmpty(s)) {
-      val fields = s.split(" ")
-      if (fields.length > 1) {
-        date = fields(0).replace("-", "")
-      }
-    }
-    date
-  }
+  def formatDate(date: Date): String = DATE_FORMAT.format(date)
+
+  /**
+    * 格式化日期 时间戳转日期
+    *
+    * @param timestamp 时间戳
+    * @return yyyy-MM-dd
+    */
+  def formatDate(timestamp: Timestamp): String = DATE_FORMAT.format(timestamp * 1000)
+
+  /**
+    * 格式化日期 string转日期
+    *
+    * @param date "yyyy-MM-dd HH:mm:ss"
+    * @return yyyy-MM-dd
+    */
+  def formatDate(date: String): String = DATE_FORMAT.format(DATE_FORMAT.parse(date))
+
+  /**
+    * 格式化时间 date对象转时间
+    *
+    * @param date Date对象 Sat Sep 07 03:02:01 CST 2019
+    * @return yyyy-MM-dd HH:mm:ss
+    */
+  def formatTime(date: Date): String = TIME_FORMAT.format(date)
+
+
+  /**
+    * 格式化日期 date转yyyyMMdd日期
+    *
+    * @param date yyyy-MM-dd HH:mm:ss
+    * @return yyyyMMdd
+    */
+  def formatKeyDate(date: Date): String = DATE_KEY_FORMAT.format(date)
+
+  /**
+    * 格式化日期 date string转yyyyMMdd日期,没有-间隔
+    *
+    * @param date "yyyy-MM-dd HH:mm:ss"
+    * @return yyyyMMdd
+    */
+  def formatKeyDate(date: String): String = DATE_KEY_FORMAT.format(TIME_FORMAT.parse(date))
 
   /**
     * 将GMT日期格式转换为时间戳
-    * @param s 12/Sep/2018:00:07:39 +0800
+    *
+    * @param gmt 07/Sep/2019:00:07:39 +0800
     * @return timestamp
     */
-  def gmtDateToTimestamp(s : String):Long = {
-    var date:Long = 0
-    if (StringUtils.isNotEmpty(s)) {
-      date = new SimpleDateFormat("dd/MMM/yyyy hh:mm:ss",Locale.ENGLISH).parse(s).getTime
-    }
-    date
-  }
+  def formatGmtToTimestamp(gmt: String): Long = GMT_FORMAT.parse(gmt).getTime
 
   /**
-    * 将时间格式化为时间戳
-    * @param s 2018-12-12 16:08:31
+    * 格式化时间戳 date string转时间戳
+    *
+    * @param date "yyyy-MM-dd HH:mm:ss"
     * @return timestamp
     */
-  def timeToTimestamp(s:String):Long={
-    val date = new SimpleDateFormat("yyyy-MM-dd").parse(s).getTime
-    date
-  }
+  def formatDateToTimestamp(date: String): Long = TIME_FORMAT.parse(date).getTime
 
   /**
-    * 将CMT日期格式转换为普通日期
-    * @param s 12/Sep/2018:00:07:39 +0800
-    * @return 2018-12-12 12:11:10
+    * 将CMT日期格式转换为时间
+    *
+    * @param gmt 07/Sep/2019:00:07:39 +0800
+    * @return yyyy-MM-dd HH:mm:ss
     */
-  def gmtDateToTime(s : String):String = {
-    var date = ""
-    if (StringUtils.isNotEmpty(s)) {
-      date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(s)
-    }
-    date.toString
-  }
+  def formatGmtToTime(gmt: String): String = TIME_FORMAT.format(gmt)
 
   /**
-    * 将时间戳转换为日期格式
-    * @param s timestamp
-    * @return 2018-12-12 12:11:10
+    * 格式化时间 保留到分钟级
+    *
+    * @param date yyyy-MM-dd HH:mm:ss
+    * @return yyyyMMddHHmm
     */
-  def timestampToTime(s : Long):String={
-    val date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(s)
-    date
-  }
-
-  /**
-    * 将时间戳转换为日期格式,格式化到天
-    * @param s XXXXX
-    * @return 2018-12-12
-    */
-  def timestampToDate(s:Long):String={
-    val date = new SimpleDateFormat("yyyy-MM-dd").format(s)
-    date
-  }
+  def formatTimeMinute(date: Date): String = TIME_MINUTE_FORMAT.format(date)
 
   /**
     * 将时间格式化为0 时整的时间
-    * @param s 2018-12-12 16:08:31
-    * @return 2018-12-12 00:00:00
+    *
+    * @param date yyyy-MM-dd HH:mm:ss
+    * @return yyyy-MM-dd 00:00:00
     */
-  def timestampToDateZ(s:String):String={
-    val time = new SimpleDateFormat("yyyy-MM-dd").parse(s).getTime
-    val date = timestampToTime(time)
-    date
+  def formatTimeZone(date: String): String = {
+    val time = DATE_FORMAT.parse(date).getTime
+    formatDate(time)
   }
 
   /**
     * 将时间转换为日期格式,格式化到月
-    * @param s 2018-12-12 12:11:10
-    * @return 2018-12
+    *
+    * @param date yyyy-MM-dd HH:mm:ss
+    * @return yyyy-MM
     */
-  def dateToMonth(s:String):String={
-    var date = ""
-    if (StringUtils.isNotEmpty(s)) {
-      val fields = s.split(" ")(0).split("-")
-      date = fields(0)+fields(1)
-    }
-    date
+  def formatDateToMonth(date: String): String = {
+    val sdf = new SimpleDateFormat("yyyy-MM")
+    sdf.format(TIME_FORMAT.parse(date))
   }
 
   /**
-    * 格式化小时
-    * @param s 2018-01-13 12:11:10
-    * @return 12
+    * 获取小时
+    *
+    * @param date yyyy-MM-dd HH:mm:ss
+    * @return HH
     */
-  def fmtHour(s:String):Option[String]={
-    try {
-      if (StringUtils.isNotEmpty(s)) {
-        val fields = s.split(" ")
-        if (fields.length > 1) {
-          Some(fields(1).substring(0, 2))
-        } else {
-          None
-        }
-
-      } else {
-        None
-      }
-    } catch {
-      case _:Exception => None
-    }
-  }
-
-  def main(args: Array[String]): Unit = {
-    //    val date = fmtDate("2018-01-13 12:11:10").getOrElse("unkown")
-    //    val hour = fmtHour("2018-01-13 12:11:10").getOrElse("unkown")
-    //    print(date + "  "+ hour)
-    //println(getId())
-    //    val date = gmtDateToTimestamp("11/Sep/2018:00:01:51")
-    //    println(date)
-    //    val date2 = timestampToTime(date)
-    //    println(date2)
-
-    val cal = Calendar.getInstance()
-    cal.add(Calendar.DATE,-3)
-    var day = DateUtils.timeToTimestamp(DateUtils.timestampToTime(cal.getTimeInMillis))
-    println(day)
+  def formatHour(date: String): String = {
+    val sdf = new SimpleDateFormat("HH")
+    sdf.format(TIME_FORMAT.parse(date))
   }
 }
