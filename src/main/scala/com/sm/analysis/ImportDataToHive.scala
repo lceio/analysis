@@ -4,7 +4,6 @@ import java.io.File
 import java.util.Properties
 
 import com.sm.conf.ConfigurationManager
-import com.sm.constants.Constants2
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 object ImportDataToHive {

@@ -5,7 +5,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 
 object SparkUtil {
 
-  def getSparkConf(master: String, appName: String): SparkConf = {
+  def getSparkConf(appName: String, master: String): SparkConf = {
     new SparkConf().setMaster(master).setAppName(appName)
   }
 

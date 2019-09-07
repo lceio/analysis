@@ -1,7 +1,5 @@
 package com.sm.bean
 
-import com.alibaba.fastjson.annotation.JSONField
-
 import scala.beans.BeanProperty
 
 case class MoneyFlowBean() extends Serializable {

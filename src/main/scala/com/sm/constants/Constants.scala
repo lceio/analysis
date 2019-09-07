@@ -4,6 +4,12 @@ package com.sm.constants
 object Constants {
   //spark作业的调度方式
   val SPARK_JOB_DEPLOY_MODE = "spark.job.deploy.mode"
+  val SPARK_LOCAL_MODE = "local[4]"
+  val SPARK_YARN_CLIENT_MODE = "yarn-client"
+  val SPARK_YARN_CLUSTER_MODE = "yarn-cluster"
+  val SPARK_NAME =s"${this.getClass.getSimpleName}"
+
+  val HIVE_ODS = "hive.ods"
 
   //本地运行的session对应的task id
   val SPARK_JOB_SESSION_TASK_ID = "spark.job.session.task.id"
