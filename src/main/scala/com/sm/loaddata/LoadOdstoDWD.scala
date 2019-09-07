@@ -50,10 +50,11 @@ object LoadOdsToDwd {
     val importSql =
       s"""
         |select * from
-        | ${props.getProperty("hive.database")}.${props.getProperty("hive.ods.cp.api.table")} limit 10
+        | ${props.getProperty("hive.database")}.${props.getProperty("hive.ods.cp.api.temp.table")} limit 10
       """.stripMargin
     logger.info(importSql)
 
+    logger.info("===================> 加载temp表 导入ODS层 <===================")
 //    sql(importSql).collect().foreach(println)
     sql(importSql).write.format("orc").insertInto("sm_data.ods_cp_api_log2")
 
