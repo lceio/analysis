@@ -1,45 +1,58 @@
 package com.sm.loaddata
 
 import java.io.File
-import java.util.Properties
 
+import com.sm.bean.{MoneyFlowBean, RoleRankBean}
 import com.sm.conf.ConfigurationManager
-import com.sm.constants.Constants2
+import com.sm.constants.Constants
+import org.apache.log4j.{Level, Logger}
+import org.apache.spark.SparkConf
 import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.slf4j.LoggerFactory
 
-object LoadOdstoDWD {
-  val warehouseLocaion = new File("spark-warehouse").getAbsolutePath
+object LoadOdstoDwd {
+  private val logger = LoggerFactory.getLogger("LogCollector")
+  private val warehouseLocaion: String = new File("spark-warehouse").getAbsolutePath
   private val props = ConfigurationManager
-  var fTable = ""
-  var destTable = ""
-  var table = ""
-  var url = ""
+
+  Logger.getLogger("org.apache.hadoop").setLevel(Level.WARN)
+  Logger.getLogger("org.apache.spark").setLevel(Level.WARN)
+  Logger.getLogger("org.spark-project.jetty").setLevel(Level.WARN)
 
   def main(args: Array[String]): Unit = {
-    var spark = initSparkSession
+    import org.apache.spark
 
-    println("开始导入数据>>>")
+
+    val conf = new SparkConf().registerKryoClasses(Array(classOf[MoneyFlowBean], classOf[RoleRankBean]))
+
+    val spark = initSparkSession(conf)
 
     // 读取ODS层数据,解析导入DWD层事件表
-    // 获取登录数最大ID
-    val prop = props.getProperties(Constants2.TEST)
-    table = prop.getProperty("table")
-    url = prop.getProperty("url")
-    println(prop)
-    val maxId =
-      """
-        | select
-        | max(id)
-        | from tmpTable
+    logger.info("=============================> 连接Hive,拉取ODS层数据 <=============================")
+
+    val prop = ConfigurationManager.properties
+    prop.load(ConfigurationManager.getClass.getClassLoader.getResourceAsStream("hive-ods.properties"))
+
+    import spark.sql
+    val importSql =
+      s"""
+         |select * from
+         | ${prop.getProperty("hive.database")}.${prop.getProperty("hive.ods_cp_api_log")} limit 10
       """.stripMargin
-    getData(spark,maxId,prop)
+
+    sql(importSql)
+
+
 
     spark.stop()
   }
 
-  def initSparkSession:SparkSession = SparkSession.builder()
-    .appName(Constants2.SPARK_NAME)
-    .master(Constants2.SPARK_MODE)
+  def importHiveOds: DataFrame = {
+
+  }
+
+  def initSparkSession(conf: SparkConf): SparkSession = SparkSession.builder().config(conf)
+    .appName(Constants.SPARK_NAME).master(Constants.SPARK_LOCAL_MODE)
     .config("spark.sql.warehouse.dir", warehouseLocaion)
     .config("hive.exec.dynamic.partition", "true")
     .config("hive.exec.dynamic.partition.mode", "nonstrict")
@@ -47,33 +60,10 @@ object LoadOdstoDWD {
     .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     .config("spark.kryoserializer.buffer", "1024m")
     .config("spark.kryoserializer.buffer.max", "2046m")
-    .config("spark.io.compression.codec","snappy")
+    .config("spark.io.compression.codec", "snappy")
     .config("spark.sql.codegen", "true")
     .config("spark.sql.unsafe.enabled", "true")
     .config("spark.shuffle.manager", "tungsten-sort")
     .enableHiveSupport()
     .getOrCreate()
-
-  //获取配置数据
-  //  def getProperties(db:String):Properties={
-  //    val in = this.getClass.getClassLoader.getResourceAsStream(db)
-  //    prop.load(in)
-  //    table = prop.getProperty("table")
-  //    url = prop.getProperty("url") + "?user="+prop.getProperty("user")+"&password="+prop.getProperty("password")
-  //    prop
-  //  }
-
-  //连接数据库读取数据
-  //  def getData(spark:SparkSession,sql:String):DataFrame={
-  //    val dataDF = spark.sqlContext.read.format("jdbc").option("url",url).option("dbtable",table).load()
-  //    dataDF.createOrReplaceTempView("dataTable")
-  //    val dataFrame = spark.sql(sql)
-  //    dataFrame
-  //  }
-  def getData(spark:SparkSession,sql:String,prop:Properties):DataFrame={
-    val dataDF = spark.sqlContext.read.format("jdbc").option("url",url).option("dbtable",table).load()
-    dataDF.createOrReplaceTempView("tmpTable")
-    val dataFrame = spark.sql(sql)
-    dataFrame
-  }
 }
